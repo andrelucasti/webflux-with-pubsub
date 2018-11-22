@@ -1,0 +1,16 @@
+filebeat.prospectors:
+  - input_type: log
+    paths:
+      - /usr/share/filebeat/logs/application.log
+    fields: 
+      type: application-log
+    scan_frequency: 12s
+
+output:
+  logstash:
+    hosts: ["logstash:5000"]
+logging:
+  files:
+    rotateeverybytes: 10485760 #=10MB
+  selector: ["*"]
+  level: warning  

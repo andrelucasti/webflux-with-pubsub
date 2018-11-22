@@ -1,0 +1,10 @@
+http.host: 0.0.0.0
+http.port: 9600
+path.config: /usr/share/logstash/config
+path.data: /usr/share/logstash
+path.logs: /var/log
+pipeline:
+  batch:
+    delay: 25
+    size: 125
+xpack.monitoring.enabled: false

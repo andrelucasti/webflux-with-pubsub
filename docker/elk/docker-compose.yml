@@ -1,0 +1,99 @@
+version: '3'
+
+networks:
+  elk-network:
+    driver: bridge
+
+volumes:
+  elkdata1:
+    driver: local
+  elkdata2:
+    driver: local    
+  elkdata3:
+    driver: local     
+
+services:
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.2.2
+    container_name: kibana
+    ports:
+      - 5601:5601
+    networks:
+      - elk-network
+    depends_on: 
+      - elasticsearch
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.2
+    container_name: elasticsearch
+    environment:
+      - cluster.name=docker-cluster
+      - node.name=node-1
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elkdata1:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks: 
+      - elk-network
+
+  elasticsearch2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.2
+    container_name: elasticsearch2
+    environment:
+      - cluster.name=docker-cluster
+      - node.name=node-2
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elkdata2:/usr/share/elasticsearch/data
+    networks: 
+      - elk-network   
+    depends_on: 
+      - elasticsearch   
+  
+  logstash:
+    image: docker.elastic.co/logstash/logstash:6.2.2
+    container_name: logstash
+    volumes:
+      - ./pipeline/beats.conf:/usr/share/logstash/pipeline/beats.conf
+      
+    networks: 
+      - elk-network
+    depends_on: 
+      - elasticsearch  
+
+  filebeat:
+    build: 
+      context: .
+      dockerfile: filebeat.dockerfile
+    container_name: filebeat
+    volumes:
+      - ./filebeat/application.log
+    networks:
+      - elk-network
+    depends_on: 
+      - logstash  
+
+  omnisci:
+    image: mapd/mapd-ce-cpu
+    container_name: omnisci
+    ports:
+      - 9092:9092
+      - 9090:9090
+    volumes:
+      - $HOME/mapd-docker-storage:/mapd-storage
+    networks: 
+      - elk-network            
